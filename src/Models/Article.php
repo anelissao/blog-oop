@@ -8,6 +8,7 @@ class Article {
     public $id;
     public $title;
     public $content;
+    public $image_path;
     public $user_id;
     public $created_at;
     
@@ -15,10 +16,37 @@ class Article {
         $this->conn = $db;
     }
     
+    public function uploadImage($file) {
+        if (!$file || $file['error'] !== UPLOAD_ERR_OK) {
+            return null;
+        }
+    
+        $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
+        if (!in_array($file['type'], $allowed_types)) {
+            throw new Exception('Invalid file type. Only JPG, PNG and GIF are allowed.');
+        }
+    
+        $max_size = 5 * 1024 * 1024; // 5MB
+        if ($file['size'] > $max_size) {
+            throw new Exception('File is too large. Maximum size is 5MB.');
+        }
+    
+        $upload_dir = $_SERVER['DOCUMENT_ROOT'] . '/uploads/';
+        $file_extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $file_name = uniqid() . '.' . $file_extension;
+        $target_path = $upload_dir . $file_name;
+    
+        if (move_uploaded_file($file['tmp_name'], $target_path)) {
+            return 'uploads/' . $file_name;
+        }
+    
+        throw new Exception('Failed to upload file.');
+    }
+    
     public function create() {
         $query = "INSERT INTO " . $this->table . " 
-                 (title, content, user_id) 
-                 VALUES (:title, :content, :user_id)";
+                 (title, content, image_path, user_id) 
+                 VALUES (:title, :content, :image_path, :user_id)";
         
         $stmt = $this->conn->prepare($query);
         
@@ -29,6 +57,7 @@ class Article {
         // Bind parameters
         $stmt->bindParam(':title', $this->title);
         $stmt->bindParam(':content', $this->content);
+        $stmt->bindParam(':image_path', $this->image_path);
         $stmt->bindParam(':user_id', $this->user_id);
         
         if($stmt->execute()) {
@@ -65,8 +94,14 @@ class Article {
     
     public function update() {
         $query = "UPDATE " . $this->table . "
-                 SET title = :title, content = :content
-                 WHERE id = :id AND user_id = :user_id";
+                 SET title = :title, content = :content";
+        
+        // Only update image if a new one is provided
+        if ($this->image_path) {
+            $query .= ", image_path = :image_path";
+        }
+        
+        $query .= " WHERE id = :id AND user_id = :user_id";
         
         $stmt = $this->conn->prepare($query);
         
@@ -77,6 +112,9 @@ class Article {
         // Bind parameters
         $stmt->bindParam(':title', $this->title);
         $stmt->bindParam(':content', $this->content);
+        if ($this->image_path) {
+            $stmt->bindParam(':image_path', $this->image_path);
+        }
         $stmt->bindParam(':id', $this->id);
         $stmt->bindParam(':user_id', $this->user_id);
         
@@ -87,11 +125,25 @@ class Article {
     }
     
     public function delete() {
-        $query = "DELETE FROM " . $this->table . " 
-                 WHERE id = :id AND user_id = :user_id";
-        
+        // First get the image path
+        $query = "SELECT image_path FROM " . $this->table . " WHERE id = :id AND user_id = :user_id";
         $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $this->id);
+        $stmt->bindParam(':user_id', $this->user_id);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
         
+        // Delete the image file if it exists
+        if ($row && $row['image_path']) {
+            $image_path = $_SERVER['DOCUMENT_ROOT'] . '/' . $row['image_path'];
+            if (file_exists($image_path)) {
+                unlink($image_path);
+            }
+        }
+        
+        // Delete the database record
+        $query = "DELETE FROM " . $this->table . " WHERE id = :id AND user_id = :user_id";
+        $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $this->id);
         $stmt->bindParam(':user_id', $this->user_id);
         

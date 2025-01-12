@@ -46,17 +46,26 @@ switch ($page) {
         }
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $article = new Article($db);
-            $article->title = $_POST['title'];
-            $article->content = $_POST['content'];
-            $article->user_id = $_SESSION['user_id'];
-            
-            if ($article->create()) {
-                $_SESSION['message'] = 'Article created successfully!';
-                header('Location: index.php');
-                exit;
-            } else {
-                $_SESSION['error'] = 'Failed to create article';
+            try {
+                $article = new Article($db);
+                $article->title = $_POST['title'];
+                $article->content = $_POST['content'];
+                $article->user_id = $_SESSION['user_id'];
+                
+                // Handle image upload if present
+                if (isset($_FILES['image']) && $_FILES['image']['error'] !== UPLOAD_ERR_NO_FILE) {
+                    $article->image_path = $article->uploadImage($_FILES['image']);
+                }
+                
+                if ($article->create()) {
+                    $_SESSION['message'] = 'Article created successfully!';
+                    header('Location: index.php');
+                    exit;
+                } else {
+                    $_SESSION['error'] = 'Failed to create article';
+                }
+            } catch (Exception $e) {
+                $_SESSION['error'] = $e->getMessage();
             }
         }
         

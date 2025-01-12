@@ -8,7 +8,7 @@
         </div>
     <?php endif; ?>
 
-    <form action="index.php?page=write-article" method="POST" class="form">
+    <form action="index.php?page=write-article" method="POST" class="form" enctype="multipart/form-data">
         <div class="form-group">
             <label for="title">Title:</label>
             <input type="text" id="title" name="title" required class="form-control">
@@ -17,6 +17,12 @@
         <div class="form-group">
             <label for="content">Content:</label>
             <textarea id="content" name="content" required class="form-control" rows="10"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="image">Image (optional):</label>
+            <input type="file" id="image" name="image" accept="image/*" class="form-control">
+            <small class="form-text text-muted">Supported formats: JPG, PNG, GIF. Maximum size: 5MB</small>
         </div>
         
         <button type="submit" class="btn btn-primary">Publish Article</button>
@@ -74,5 +80,11 @@ textarea.form-control {
     margin-bottom: 20px;
     border: 1px solid #f5c6cb;
     border-radius: 4px;
+}
+
+.form-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 4px;
 }
 </style>
