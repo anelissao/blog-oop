@@ -42,7 +42,9 @@ class User {
     }
     
     public function login($username, $password) {
-        $query = "SELECT id, username, password, role FROM " . $this->table . " 
+        error_log("Login attempt - Username: " . $username);
+        
+        $query = "SELECT * FROM " . $this->table . " 
                  WHERE username = :username OR email = :username LIMIT 1";
         
         $stmt = $this->conn->prepare($query);
@@ -50,9 +52,16 @@ class User {
         $stmt->execute();
         
         if($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            error_log("User found: " . print_r($row, true));
             if(password_verify($password, $row['password'])) {
+                error_log("Password verified successfully");
                 return $row;
             }
+            error_log("Password verification failed");
+            error_log("Input password: " . $password);
+            error_log("Stored hash: " . $row['password']);
+        } else {
+            error_log("No user found with username/email: " . $username);
         }
         return false;
     }

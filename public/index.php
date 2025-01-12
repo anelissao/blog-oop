@@ -22,14 +22,46 @@ switch ($page) {
     case 'login':
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user = new User($db);
-            if ($user->login($_POST['username'], $_POST['password'])) {
-                $_SESSION['user_id'] = $user->id;
+            $userData = $user->login($_POST['username'], $_POST['password']);
+            if ($userData) {
+                $_SESSION['user_id'] = $userData['id'];
+                $_SESSION['username'] = $userData['username'];
+                $_SESSION['role'] = $userData['role'];
                 header('Location: index.php');
                 exit;
+            } else {
+                $_SESSION['error'] = 'Invalid username or password';
             }
         }
         include __DIR__ . '/../templates/header.php';
         include __DIR__ . '/../templates/login.php';
+        include __DIR__ . '/../templates/footer.php';
+        break;
+        
+    case 'write-article':
+        // Check if user is logged in
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: index.php?page=login');
+            exit;
+        }
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $article = new Article($db);
+            $article->title = $_POST['title'];
+            $article->content = $_POST['content'];
+            $article->user_id = $_SESSION['user_id'];
+            
+            if ($article->create()) {
+                $_SESSION['message'] = 'Article created successfully!';
+                header('Location: index.php');
+                exit;
+            } else {
+                $_SESSION['error'] = 'Failed to create article';
+            }
+        }
+        
+        include __DIR__ . '/../templates/header.php';
+        include __DIR__ . '/../templates/write-article.php';
         include __DIR__ . '/../templates/footer.php';
         break;
         
