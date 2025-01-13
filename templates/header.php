@@ -3,82 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blog System</title>
+    <title>My Blog</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 </head>
 <body>
-    <nav class="navbar">
-        <div class="nav-brand">
-            <a href="index.php">Blog System</a>
+    <header>
+        <div class="header-content">
+            <a href="index.php" class="site-title">MyBlog</a>
+            <nav>
+                <ul>
+                    <li><a href="index.php">Home</a></li>
+                    <?php if (isset($_SESSION['user_id'])): ?>
+                        <li><a href="index.php?page=write-article">Write Article</a></li>
+                        <li><a href="index.php?page=logout">Logout</a></li>
+                    <?php else: ?>
+                        <li><a href="index.php?page=login">Login</a></li>
+                        <li><a href="index.php?page=register">Register</a></li>
+                    <?php endif; ?>
+                </ul>
+            </nav>
         </div>
-        <div class="nav-links">
-            <?php if (isset($_SESSION['user_id'])): ?>
-                <a href="index.php?page=write-article" class="nav-link">Write New Article</a>
-                <span class="nav-link">Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?></span>
-                <a href="index.php?page=logout" class="nav-link">Logout</a>
-            <?php else: ?>
-                <a href="index.php?page=login" class="nav-link">Login</a>
-                <a href="index.php?page=register" class="nav-link">Register</a>
-            <?php endif; ?>
-        </div>
-    </nav>
-    <div class="content">
+    </header>
+    
+    <main>
         <?php if (isset($_SESSION['message'])): ?>
-            <div class="success-message">
-                <?php echo $_SESSION['message']; ?>
-                <?php unset($_SESSION['message']); ?>
+            <div class="container">
+                <div class="message success-message">
+                    <?php 
+                    echo $_SESSION['message'];
+                    unset($_SESSION['message']);
+                    ?>
+                </div>
             </div>
         <?php endif; ?>
+        <div class="content">
+            <?php // Rest of the content remains the same ?>
+        </div>
+    </main>
 
 <style>
-.navbar {
-    background-color: #333;
-    padding: 1rem;
+/* Add styles here */
+.header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.nav-brand a {
-    color: white;
-    text-decoration: none;
+.site-title {
     font-size: 1.5rem;
     font-weight: bold;
+    color: #333;
+    text-decoration: none;
 }
 
-.nav-links {
+nav ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
     display: flex;
     gap: 1rem;
-    align-items: center;
 }
 
-.nav-link {
-    color: white;
+nav a {
+    color: #333;
     text-decoration: none;
-    padding: 0.5rem 1rem;
 }
 
-.nav-link:hover {
-    background-color: #555;
+nav a:hover {
+    color: #555;
+}
+
+.message {
+    padding: 1rem;
+    margin-bottom: 1rem;
     border-radius: 4px;
-}
-
-.content {
-    padding: 20px;
-    max-width: 1200px;
-    margin: 0 auto;
+    border: 1px solid #ddd;
 }
 
 .success-message {
     background-color: #d4edda;
     color: #155724;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    border-radius: 4px;
-    border: 1px solid #c3e6cb;
-}
-
-span.nav-link {
-    color: #aaa;
 }
 </style>
