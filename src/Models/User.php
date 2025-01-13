@@ -5,15 +5,61 @@ class User {
     private $table = 'users';
     
     // User properties
-    public $id;
-    public $username;
-    public $email;
-    public $password;
-    public $role;
-    public $created_at;
+    private $id;
+    private $username;
+    private $email;
+    private $password;
+    private $role;
+    private $created_at;
     
     public function __construct($db) {
         $this->conn = $db;
+    }
+
+    // Getters
+    public function getId() {
+        return $this->id;
+    }
+
+    public function getUsername() {
+        return $this->username;
+    }
+
+    public function getEmail() {
+        return $this->email;
+    }
+
+    public function getRole() {
+        return $this->role;
+    }
+
+    public function getCreatedAt() {
+        return $this->created_at;
+    }
+
+    // Setters
+    public function setId($id) {
+        $this->id = $id;
+    }
+
+    public function setUsername($username) {
+        $this->username = $username;
+    }
+
+    public function setEmail($email) {
+        $this->email = $email;
+    }
+
+    public function setPassword($password) {
+        $this->password = password_hash($password, PASSWORD_DEFAULT);
+    }
+
+    public function setRole($role) {
+        $this->role = $role;
+    }
+
+    public function setCreatedAt($created_at) {
+        $this->created_at = $created_at;
     }
     
     public function create() {
@@ -23,17 +69,16 @@ class User {
         
         $stmt = $this->conn->prepare($query);
         
-        // Clean and hash data
+        // Clean data
         $this->username = htmlspecialchars(strip_tags($this->username));
         $this->email = htmlspecialchars(strip_tags($this->email));
-        $this->password = password_hash($this->password, PASSWORD_BCRYPT);
         $this->role = htmlspecialchars(strip_tags($this->role));
         
-        // Bind parameters
-        $stmt->bindParam(':username', $this->username);
-        $stmt->bindParam(':email', $this->email);
-        $stmt->bindParam(':password', $this->password);
-        $stmt->bindParam(':role', $this->role);
+        // Bind data
+        $stmt->bindParam(":username", $this->username);
+        $stmt->bindParam(":email", $this->email);
+        $stmt->bindParam(":password", $this->password);
+        $stmt->bindParam(":role", $this->role);
         
         if($stmt->execute()) {
             return true;
@@ -42,26 +87,20 @@ class User {
     }
     
     public function login($username, $password) {
-        error_log("Login attempt - Username: " . $username);
-        
-        $query = "SELECT * FROM " . $this->table . " 
-                 WHERE username = :username OR email = :username LIMIT 1";
-        
+        $query = "SELECT id, username, password, role FROM " . $this->table . " WHERE username = :username";
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':username', $username);
+        
+        $stmt->bindParam(":username", $username);
         $stmt->execute();
         
-        if($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            error_log("User found: " . print_r($row, true));
+        if($stmt->rowCount() > 0) {
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
             if(password_verify($password, $row['password'])) {
-                error_log("Password verified successfully");
-                return $row;
+                $this->id = $row['id'];
+                $this->username = $row['username'];
+                $this->role = $row['role'];
+                return true;
             }
-            error_log("Password verification failed");
-            error_log("Input password: " . $password);
-            error_log("Stored hash: " . $row['password']);
-        } else {
-            error_log("No user found with username/email: " . $username);
         }
         return false;
     }
