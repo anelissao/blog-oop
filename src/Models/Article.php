@@ -11,6 +11,11 @@ class Article {
     private $image_path;
     private $user_id;
     private $created_at;
+    private $comments_count;
+    private $likes_count;
+    private $user_liked;
+    private $author;
+    private $categories;
     
     public function __construct($db) {
         $this->conn = $db;
@@ -39,6 +44,26 @@ class Article {
 
     public function getCreatedAt() {
         return $this->created_at;
+    }
+
+    public function getCommentsCount() {
+        return $this->comments_count;
+    }
+
+    public function getLikesCount() {
+        return $this->likes_count;
+    }
+
+    public function getUserLiked() {
+        return $this->user_liked;
+    }
+
+    public function getAuthor() {
+        return $this->author;
+    }
+
+    public function getCategories() {
+        return $this->categories;
     }
 
     // Setters
@@ -117,7 +142,7 @@ class Article {
         return false;
     }
     
-    public function read() {
+    public function read($category_id = null, $search = null) {
         $query = "SELECT 
                     a.id, 
                     a.title, 
@@ -125,17 +150,49 @@ class Article {
                     a.image_path,
                     a.user_id, 
                     a.created_at,
-                    u.username as author
+                    u.username as author,
+                    GROUP_CONCAT(DISTINCT c.name) as categories,
+                    (SELECT COUNT(*) FROM comments WHERE article_id = a.id) as comments_count,
+                    (SELECT COUNT(*) FROM likes WHERE article_id = a.id) as likes_count
                 FROM 
                     " . $this->table . " a
                 LEFT JOIN
                     users u ON a.user_id = u.id
-                ORDER BY 
-                    a.created_at DESC";
-    
+                LEFT JOIN
+                    article_categories ac ON a.id = ac.article_id
+                LEFT JOIN
+                    categories c ON ac.category_id = c.id";
+
+        $conditions = [];
+        $params = [];
+
+        // Add category filter if specified
+        if ($category_id) {
+            $conditions[] = "ac.category_id = :category_id";
+            $params[':category_id'] = $category_id;
+        }
+
+        // Add search condition if specified
+        if ($search) {
+            $conditions[] = "(a.title LIKE :search OR a.content LIKE :search)";
+            $params[':search'] = "%{$search}%";
+        }
+
+        // Combine conditions
+        if (!empty($conditions)) {
+            $query .= " WHERE " . implode(" AND ", $conditions);
+        }
+
+        $query .= " GROUP BY a.id ORDER BY a.created_at DESC";
+
         $stmt = $this->conn->prepare($query);
+        
+        // Bind parameters
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+
         $stmt->execute();
-    
         return $stmt;
     }
     
@@ -147,13 +204,22 @@ class Article {
                     a.image_path,
                     a.user_id, 
                     a.created_at,
-                    u.username as author
+                    u.username as author,
+                    GROUP_CONCAT(DISTINCT c.name) as categories,
+                    (SELECT COUNT(*) FROM comments WHERE article_id = a.id) as comments_count,
+                    (SELECT COUNT(*) FROM likes WHERE article_id = a.id) as likes_count
                 FROM 
                     " . $this->table . " a
                 LEFT JOIN
                     users u ON a.user_id = u.id
+                LEFT JOIN
+                    article_categories ac ON a.id = ac.article_id
+                LEFT JOIN
+                    categories c ON ac.category_id = c.id
                 WHERE 
                     a.id = :id
+                GROUP BY
+                    a.id
                 LIMIT 1";
     
         $stmt = $this->conn->prepare($query);
@@ -168,6 +234,13 @@ class Article {
             $this->image_path = $row['image_path'];
             $this->user_id = $row['user_id'];
             $this->created_at = $row['created_at'];
+            $this->comments_count = $row['comments_count'];
+            $this->likes_count = $row['likes_count'];
+            
+            // Set author and categories
+            $this->author = $row['author'];
+            $this->categories = $row['categories'] ? explode(',', $row['categories']) : [];
+            
             return true;
         }
         return false;

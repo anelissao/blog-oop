@@ -3,6 +3,8 @@ session_start();
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../src/Models/User.php';
 require_once __DIR__ . '/../src/Models/Article.php';
+require_once __DIR__ . '/../src/Models/Comment.php';
+require_once __DIR__ . '/../src/Models/Like.php';
 
 // Initialize database connection
 $database = Database::getInstance();
@@ -76,13 +78,25 @@ switch ($page) {
 
     case 'article':
         $article = new Article($db);
-        $article->id = isset($_GET['id']) ? $_GET['id'] : 0;
-        $article_data = $article->readOne();
+        $article->setId(isset($_GET['id']) ? $_GET['id'] : 0);
         
-        if (!$article_data) {
+        if (!$article->readSingle()) {
             header('Location: index.php?page=404');
             exit;
         }
+        
+        $article_data = [
+            'id' => $article->getId(),
+            'title' => $article->getTitle(),
+            'content' => $article->getContent(),
+            'image_path' => $article->getImagePath(),
+            'user_id' => $article->getUserId(),
+            'created_at' => $article->getCreatedAt(),
+            'author' => $article->getAuthor(),
+            'categories' => $article->getCategories(),
+            'comments_count' => $article->getCommentsCount(),
+            'likes_count' => $article->getLikesCount()
+        ];
         
         include __DIR__ . '/../templates/header.php';
         include __DIR__ . '/../templates/article.php';
@@ -180,6 +194,51 @@ switch ($page) {
         session_destroy();
         header('Location: index.php');
         exit;
+        break;
+        
+    case 'add-comment':
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: index.php?page=login');
+            exit;
+        }
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $comment = new Comment($db);
+            $comment->setArticleId($_POST['article_id']);
+            $comment->setUserId($_SESSION['user_id']);
+            $comment->setContent($_POST['content']);
+            
+            if ($comment->create()) {
+                $_SESSION['success'] = 'Comment added successfully';
+            } else {
+                $_SESSION['error'] = 'Failed to add comment';
+            }
+            
+            header('Location: index.php?page=article&id=' . $_POST['article_id']);
+            exit;
+        }
+        break;
+        
+    case 'toggle-like':
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: index.php?page=login');
+            exit;
+        }
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $like = new Like($db);
+            $like->setArticleId($_POST['article_id']);
+            $like->setUserId($_SESSION['user_id']);
+            
+            if ($like->addLike()) {
+                $_SESSION['success'] = 'Like toggled successfully';
+            } else {
+                $_SESSION['error'] = 'Failed to toggle like';
+            }
+            
+            header('Location: index.php?page=article&id=' . $_POST['article_id']);
+            exit;
+        }
         break;
         
     case '404':
