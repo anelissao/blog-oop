@@ -1,22 +1,24 @@
 <div class="container">
-    <h1>Write New Article</h1>
+    <form class="form-container" action="index.php?page=write-article" method="POST" enctype="multipart/form-data">
+        <h1>Write New Article</h1>
 
-    <?php if (isset($_SESSION['error'])): ?>
-        <div class="error-message">
-            <?php echo $_SESSION['error']; ?>
-            <?php unset($_SESSION['error']); ?>
-        </div>
-    <?php endif; ?>
+        <?php if (isset($_SESSION['error'])): ?>
+            <div class="error-message">
+                <?php 
+                echo $_SESSION['error'];
+                unset($_SESSION['error']);
+                ?>
+            </div>
+        <?php endif; ?>
 
-    <form action="index.php?page=write-article" method="POST" class="form" enctype="multipart/form-data">
         <div class="form-group">
             <label for="title">Title:</label>
-            <input type="text" id="title" name="title" required class="form-control">
+            <input type="text" id="title" name="title" required class="form-control" placeholder="Enter article title">
         </div>
         
         <div class="form-group">
             <label for="content">Content:</label>
-            <textarea id="content" name="content" required class="form-control" rows="10"></textarea>
+            <textarea id="content" name="content" required class="form-control" rows="10" placeholder="Write your article content here..."></textarea>
         </div>
         
         <div class="form-group">
@@ -25,8 +27,10 @@
             <small class="form-text text-muted">Supported formats: JPG, PNG, GIF. Maximum size: 5MB</small>
         </div>
         
-        <button type="submit" class="btn btn-primary">Publish Article</button>
-        <a href="index.php" class="btn btn-secondary">Cancel</a>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Publish Article</button>
+            <a href="index.php" class="btn btn-secondary">Cancel</a>
+        </div>
     </form>
 </div>
 
@@ -35,6 +39,16 @@
     max-width: 800px;
     margin: 0 auto;
     padding: 20px;
+}
+
+.form-container {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
 .form-group {
@@ -86,5 +100,10 @@ textarea.form-control {
     font-size: 0.875rem;
     color: #6c757d;
     margin-top: 4px;
+}
+
+.form-actions {
+    margin-top: 20px;
+    text-align: center;
 }
 </style>
